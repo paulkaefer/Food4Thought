@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Food4Thought 🥑 Snap. Sip. Slay your macros.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <header class="navbar">
+    <div class="brand">
+      <span class="brand-emoji">🥑</span>
+      <span class="brand-name">Food4Thought</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#upload">Scan</a>
+      <a href="#feed">Feed</a>
+      <a href="#leaderboard">Streaks</a>
+      <a href="#profile" class="nav-cta">My Glow-Up</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-text">
+      <p class="kicker">✨ your bestie for gut health ✨</p>
+      <h1>Snap it. <span class="grad">Track it.</span> Thank your body later.</h1>
+      <p class="subtitle">Upload a pic of your meal and get an instant nutrition breakdown — calories, macros, vitamins, the whole vibe. No logging. No guessing. Just glow.</p>
+      <div class="hero-actions">
+        <a href="#upload" class="btn btn-primary">📸 Scan My Plate</a>
+        <a href="#feed" class="btn btn-ghost">See Community Wins</a>
+      </div>
+      <div class="hero-stats">
+        <div><strong>2.4M</strong><span>meals scanned</span></div>
+        <div><strong>98%</strong><span>felt more confident</span></div>
+        <div><strong>4.9★</strong><span>app rating</span></div>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="phone-mock">
+        <div class="phone-notch"></div>
+        <img class="hero-food-img" src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&auto=format&fit=crop&q=60" alt="Bowl of food" />
+        <div class="scan-badge">🔍 Scanning...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UPLOAD / SCAN -->
+  <section id="upload" class="scan-section">
+    <div class="section-heading">
+      <p class="kicker center">step one</p>
+      <h2>Drop your plate in. We'll spill the tea. 🍵</h2>
+    </div>
+
+    <div class="upload-card">
+      <div class="dropzone">
+        <div class="dropzone-icon">📷</div>
+        <p><strong>Drag & drop</strong> a photo, or tap to upload</p>
+        <p class="hint">JPG, PNG — good lighting = better results ✨</p>
+        <button class="btn btn-primary">Choose Photo</button>
+      </div>
+
+      <div class="arrow-connector">➡️</div>
+
+      <!-- RESULT MOCK -->
+      <div class="result-card">
+        <div class="result-header">
+          <img class="result-thumb" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60" alt="Salmon rice bowl" />
+          <div>
+            <h3>Salmon Rice Bowl</h3>
+            <p class="confidence">🤖 96% match confidence</p>
+          </div>
+        </div>
+
+        <div class="calorie-ring-wrap">
+          <div class="calorie-ring">
+            <span class="ring-value">612</span>
+            <span class="ring-label">calories</span>
+          </div>
+          <div class="macro-bars">
+            <div class="macro-row">
+              <span class="macro-label">🍗 Protein</span>
+              <div class="bar"><div class="bar-fill protein" style="width:72%"></div></div>
+              <span class="macro-num">38g</span>
+            </div>
+            <div class="macro-row">
+              <span class="macro-label">🍞 Carbs</span>
+              <div class="bar"><div class="bar-fill carbs" style="width:55%"></div></div>
+              <span class="macro-num">61g</span>
+            </div>
+            <div class="macro-row">
+              <span class="macro-label">🥑 Fat</span>
+              <div class="bar"><div class="bar-fill fat" style="width:38%"></div></div>
+              <span class="macro-num">22g</span>
+            </div>
+            <div class="macro-row">
+              <span class="macro-label">🌾 Fiber</span>
+              <div class="bar"><div class="bar-fill fiber" style="width:20%"></div></div>
+              <span class="macro-num">4g</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="vitamin-grid">
+          <div class="vitamin-chip good">Omega-3 <strong>High</strong></div>
+          <div class="vitamin-chip good">Vitamin D <strong>45%</strong></div>
+          <div class="vitamin-chip ok">Iron <strong>18%</strong></div>
+          <div class="vitamin-chip good">B12 <strong>60%</strong></div>
+          <div class="vitamin-chip warn">Sodium <strong>32%</strong></div>
+          <div class="vitamin-chip good">Potassium <strong>25%</strong></div>
+        </div>
+
+        <div class="verdict">
+          <span class="verdict-emoji">💅</span>
+          <p><strong>It's giving balanced.</strong> Great protein + omega-3s. Maybe pair with leafy greens for extra fiber tomorrow!</p>
+        </div>
+
+        <div class="result-actions">
+          <button class="btn btn-primary btn-block">Save to My Journal</button>
+          <button class="btn btn-ghost btn-block">Share the Glow ✨</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DAILY GLOW / DASHBOARD -->
+  <section id="profile" class="dashboard-section">
+    <div class="section-heading">
+      <p class="kicker center">your glow dashboard</p>
+      <h2>Today's Nutrition Recap</h2>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="dash-card streak">
+        <span class="dash-emoji">🔥</span>
+        <h3>14-day streak</h3>
+        <p>You're on fire! Keep scanning to hit 30.</p>
+      </div>
+      <div class="dash-card">
+        <span class="dash-emoji">⚡</span>
+        <h3>1,840 / 2,200 kcal</h3>
+        <div class="bar"><div class="bar-fill protein" style="width:84%"></div></div>
+        <p>360 kcal left — maybe a smoothie? 🍓</p>
+      </div>
+      <div class="dash-card">
+        <span class="dash-emoji">💧</span>
+        <h3>6 / 8 cups water</h3>
+        <div class="bar"><div class="bar-fill fiber" style="width:75%"></div></div>
+        <p>Almost there, hydration queen 👑</p>
+      </div>
+      <div class="dash-card">
+        <span class="dash-emoji">🌈</span>
+        <h3>Vitamin Rainbow</h3>
+        <p>You hit 7/9 key micronutrients today!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL FEED -->
+  <section id="feed" class="feed-section">
+    <div class="section-heading">
+      <p class="kicker center">community</p>
+      <h2>What the squad is snacking on 🍩</h2>
+    </div>
+
+    <div class="feed-grid">
+      <article class="feed-card">
+        <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&auto=format&fit=crop&q=60" alt="Smoothie bowl" />
+        <div class="feed-body">
+          <p class="feed-user">@wellwithava</p>
+          <p class="feed-caption">Acai bowl glow-up 🫐 — 420 kcal, packed with antioxidants</p>
+          <div class="feed-tags"><span>#highfiber</span><span>#antioxidants</span></div>
+        </div>
+      </article>
+      <article class="feed-card">
+        <img src="https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&auto=format&fit=crop&q=60" alt="Avocado toast" />
+        <div class="feed-body">
+          <p class="feed-user">@planttalk_marco</p>
+          <p class="feed-caption">Avo toast but make it protein 🥑 — 34g protein, good fats</p>
+          <div class="feed-tags"><span>#plantprotein</span><span>#goodfats</span></div>
+        </div>
+      </article>
+      <article class="feed-card">
+        <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&auto=format&fit=crop&q=60" alt="Buddha bowl" />
+        <div class="feed-body">
+          <p class="feed-user">@guthealth_gigi</p>
+          <p class="feed-caption">Rainbow buddha bowl 🌈 — hit ALL my micronutrients today</p>
+          <div class="feed-tags"><span>#microwin</span><span>#guthealth</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- CTA / FOOTER -->
+  <footer class="footer">
+    <div class="footer-cta">
+      <h2>Ready to eat with intention? 🍽️</h2>
+      <p>Join the community turning every meal into a glow-up moment.</p>
+      <a href="#upload" class="btn btn-primary">Start Scanning — It's Free</a>
+    </div>
+    <div class="footer-bottom">
+      <span>🥑 Food4Thought</span>
+      <span>© 2026 · Mock-up for concept review only</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
