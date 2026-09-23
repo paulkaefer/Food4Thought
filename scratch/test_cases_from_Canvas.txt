@@ -1,0 +1,110 @@
+#	Test Case	Input / Action	Expected Result
+1	Upload clear food photo	Upload a clear photo of a plate with chicken, rice, and broccoli	App identifies the foods and estimates calories, carbs, fat, protein, etc.
+2	Upload blurry photo	Upload a blurry picture of food	App should indicate low confidence, request a clearer photo, or avoid presenting uncertain results as exact
+3	Multiple foods on plate	Upload a plate containing several different foods	App identifies individual food items and provides nutrition estimates for each and the total
+4	Single food item	Upload a photo of one apple	App identifies the apple and displays estimated nutritional information
+5	Non-food photo	Upload a photo of a shoe	App should indicate that no food was detected rather than generating nutrition information
+6	Empty plate	Upload a photo of an empty plate	App should recognize that there is no measurable food and not assign calories
+7	Full meal consumed	Mark the entire meal as eaten	Consumed calories/nutrients should equal the original estimated totals
+8	Half meal consumed	Start with a 600-calorie meal and indicate that approximately 50% was eaten	Consumed calories should update to approximately 300; carbs, fat, protein, etc. should also adjust proportionally
+9	Small portion consumed	Indicate that approximately 25% of the meal was eaten	Consumed nutrition values should update to approximately 25% of the original estimates
+10	Nothing consumed	Indicate that none of the meal was eaten	Consumed calories, carbs, fat, protein, etc. should be 0
+11	Different foods eaten differently	Eat all the chicken, half the rice, and none of the broccoli	Nutrition totals should be recalculated based on the amount consumed of each individual food
+12	Before/after photos	Upload the original meal photo, eat some food, then upload another photo	App estimates the remaining portions and calculates approximately how much was consumed
+13	Food removed but not eaten	Remove food from the plate before taking the second photo	App should not automatically claim removed food was consumed unless that is an explicit assumption or the user confirms it
+14	Add food after first photo	Upload initial plate, then add another food item	App should recognize that the second image contains additional food rather than treating the difference as consumption
+15	Similar-looking foods	Upload mashed potatoes vs. cauliflower mash	App should provide an identification/confidence mechanism because visually similar foods can have substantially different nutrition
+16	Hidden ingredients	Upload something like a cheeseburger with sauces/toppings partly hidden	App should communicate that nutrition is an estimate when ingredients cannot be determined visually
+17	Portion-size uncertainty	Photograph identical food from different distances/angles	Estimates should remain reasonably consistent or warn when portion size cannot reliably be determined
+18	Very large meal	Upload a plate containing an unusually large portion	App should calculate the larger serving rather than defaulting to a standard serving size
+19	Invalid file	Upload a PDF/text file instead of an image	App rejects the file with an understandable error message
+20	Unsupported/corrupted image	Upload a corrupted or unsupported image	App handles the error without crashing and tells the user what went wrong
+detect pork, shellfish, peanuts/tree nuts, any allergens or items to avoid
+Given you upload a picture/When app will identify the food/Then tell you calories
+
+Given upload a photo with multipul foods/When app will identify there are multiple foods/Then the app will give details on each food
+
+Given two photos are uploaded after each other with the second with different amount/When the app will see the differences/Then the app will give the calorie difference
+Test Case 1: Successful Food Scan with Accurate Nutrition Results
+
+Given a user has opened the food app and grants camera access
+ When the user takes a clear picture of a grilled chicken salad
+ Then the app identifies the food items in the image
+ And calculates the total macronutrients (calories, protein, carbohydrates, and fats)
+ And displays the micronutrients (vitamins and minerals) for the identified food items
+ And presents the nutrition information within 5 seconds of the scan
+
+Test Case 2: Multiple Foods in a Single Image
+
+Given a user has opened the food app and is on the scan screen
+ When the user uploads a picture containing grilled salmon, rice, and broccoli
+ Then the app recognizes each food item separately
+ And aggregates the macronutrient totals for the entire meal
+ And displays the micronutrient breakdown for each individual food item
+ And provides a combined nutritional summary for the meal
+
+Test Case 3: Unsupported or Unclear Image
+
+Given a user is using the food scanning feature
+ When the user uploads a blurry or poorly lit image that cannot be confidently analyzed
+ Then the app informs the user that the image quality is insufficient
+ And explains why the food could not be identified
+ And prompts the user to retake or upload a clearer image
+ And does not display inaccurate nutrition data
+ 1. When non-food pictures are provided, either refuse to provide nutrition information or note that your estimate is "just for fun"
+
+2. Given dietary restrictions, when food pictures are provided, then assume that they adhere to those restrictions. For example, if a muffin is uploaded by a gluten-free user, assume it is gluten-free and estimate nutrition information accordingly.
+
+3. Given access to the internet, when food pictures are provided and it is recognized as something from a restaurant, consult the restaurants published ingredients list / nutrition facts.
+
+Forgot to add these here
+
+Test Case: Multi-food identification with per-item and combined totals
+Given a user uploads a clear photo of a plate with grilled chicken, rice, and broccoli
+When the app analyzes the image
+Then it identifies each food item individually
+And estimates calories, protein, carbs, and fat for each item
+And displays a combined total for the meal
+
+Test Case: Dietary restriction conflict flagging
+Given a user has previously set a dietary restriction (e.g., gluten-free, vegetarian, nut allergy) in their profile
+When the app identifies a food item that conflicts with that restriction
+Then it flags the item as a potential conflict rather than silently estimating nutrition
+And prompts the user to confirm the ingredients before logging it
+
+Test Case: Allergen labeling
+Given a user uploads a photo containing shellfish, peanuts, tree nuts, or other common allergens
+When the app identifies these items
+Then it explicitly labels them as allergens in the results
+Regardless of whether the user has a stated restriction on file
+
+Test Case: Portion consumed via before/after photos
+Given a user uploads an initial photo of a full plate
+And later uploads a second photo of the same plate with less food remaining
+When the app compares the two images
+Then it estimates the portion consumed based on the difference
+And does not assume 100% consumption unless the plate is empty in the second photo
+
+Test Case: Food removed but not eaten
+Given a user removes food from the plate without eating it before taking a second photo
+When the app detects the reduced quantity
+Then it does not automatically log the removed food as consumed
+And asks the user to confirm what happened to the food
+
+Test Case: Barcode/label precedence over visual estimation
+Given a user uploads a photo of packaged food with a visible barcode or label
+When the app detects the barcode
+Then it prioritizes the manufacturer's published nutrition facts over visual estimation
+And falls back to visual estimation only if no label is found
+
+Test Case: Non-food image handling
+Given a user uploads a non-food photo
+When the app cannot identify any food items
+Then it tells the user no food was detected
+And does not generate or display any nutrition estimate
+
+Test Case: Ambiguous portion size
+Given a user uploads a photo where portion size is ambiguous (e.g., no reference object for scale)
+When the app cannot confidently estimate serving size
+Then it presents a range rather than a single exact number
+And indicates that the estimate is approximate
