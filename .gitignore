@@ -1,0 +1,19 @@
+# Node.js/Next.js ignore patterns
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+.env
+.env.local
+.env*.local
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vercel
+next-env.d.ts
+prisma/dev.db

@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id           String              @id @default(uuid())
+  createdAt    DateTime            @default(now())
+  restrictions DietaryRestriction[]
+  mealLogEntries MealLogEntry[]
+}
+
+enum DietaryRestrictionType {
+  gluten_free
+  vegetarian
+  vegan
+  nut_allergy
+  shellfish_allergy
+  avoid_pork
+}
+
+model DietaryRestriction {
+  id        String                 @id @default(uuid())
+  userId    String
+  user      UserProfile            @relation(fields: [userId], references: [id])
+  type      DietaryRestrictionType
+  createdAt DateTime               @default(now())
+
+  // duplicates for the same user/type are rejected
+  @@unique([userId, type])
+}
+
+enum MealLogStatus {
+  processing
+  identified
+  needs_confirmation
+  rejected_non_food
+  rejected_low_quality
+  rejected_invalid_file
+  empty_plate
+}
+
+model MealLogEntry {
+  id                     String            @id @default(uuid())
+  userId                 String
+  user                   UserProfile       @relation(fields: [userId], references: [id])
+  createdAt              DateTime          @default(now())
+  beforePhotoUrl         String
+  afterPhotoUrl          String?
+  status                 MealLogStatus
+  // true only for non-food "just for fun" results; excluded from aggregates by construction, never by UI filtering alone
+  isFunEstimate          Boolean           @default(false)
+  foodItems              FoodItem[]
+  consumptionRecords     ConsumptionRecord[]
+
+  // combinedNutritionTotals is derived (see lib/services/nutrition/calculate-nutrition.ts), not stored redundantly
+}
+
+enum FoodItemIdentificationStatus {
+  confirmed
+  pending_user_confirmation
+}
+
+enum FoodItemDataSource {
+  visual_estimate
+  packaged_label
+  restaurant_data
+}
+
+model FoodItem {
+  id                   String                        @id @default(uuid())
+  mealLogEntryId       String
+  mealLogEntry         MealLogEntry                  @relation(fields: [mealLogEntryId], references: [id])
+  name                 String
+  confidence           Float
+  identificationStatus FoodItemIdentificationStatus  @default(pending_user_confirmation)
+  dataSource           FoodItemDataSource             @default(visual_estimate)
+  consumptionFraction  Float?
+
+  // PortionEstimate (embedded value object, see lib/models/portion-estimate.ts)
+  portionAmount             Float?
+  portionRangeMin           Float?
+  portionRangeMax           Float?
+  portionUnit               String  @default("g")
+  portionIsApproximate      Boolean @default(false)
+  portionConfidenceWarning  String?
+
+  // NutritionEstimate (embedded value object, see lib/models/nutrition-estimate.ts)
+  calories             Float   @default(0)
+  proteinG             Float   @default(0)
+  carbsG               Float   @default(0)
+  fatG                 Float   @default(0)
+  micronutrients       Json    @default("{}")
+  nutritionIsApproximate Boolean @default(false)
+  uncertaintyReason    String?
+
+  allergenLabels       AllergenLabel[]
+  dietaryConflictFlags DietaryConflictFlag[]
+  consumptionRecords   ConsumptionRecord[]
+}
+
+enum Allergen {
+  shellfish
+  peanuts
+  tree_nuts
+  pork
+}
+
+model AllergenLabel {
+  id         String   @id @default(uuid())
+  foodItemId String
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+  allergen   Allergen
+}
+
+enum DietaryConflictReason {
+  conflict_detected
+  cannot_verify
+}
+
+model DietaryConflictFlag {
+  id               String                 @id @default(uuid())
+  foodItemId       String
+  foodItem         FoodItem               @relation(fields: [foodItemId], references: [id])
+  restrictionType  DietaryRestrictionType
+  reason           DietaryConflictReason
+  // Must be true before the item counts toward logged/consumed totals
+  confirmedByUser  Boolean                @default(false)
+}
+
+enum ConsumptionMethod {
+  manual_fraction
+  per_item
+  photo_comparison
+}
+
+model ConsumptionRecord {
+  id                       String            @id @default(uuid())
+  mealLogEntryId           String
+  mealLogEntry             MealLogEntry      @relation(fields: [mealLogEntryId], references: [id])
+  foodItemId               String?
+  foodItem                 FoodItem?         @relation(fields: [foodItemId], references: [id])
+  method                   ConsumptionMethod
+  consumedFraction         Float
+  derivedFromAfterPhotoUrl String?
+  removalSuspected         Boolean           @default(false)
+  addedFoodDetected        Boolean           @default(false)
+  createdAt                DateTime          @default(now())
+}
