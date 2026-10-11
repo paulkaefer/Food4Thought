@@ -3,6 +3,7 @@ import type { PortionEstimate } from "@/lib/models/portion-estimate";
 import type { VisionFoodCandidate } from "@/lib/services/vision/provider";
 import { createUsdaClient } from "./usda-provider";
 import { findVerifiedFoodMapping } from "./food-vocabulary";
+import { approximateFoodNutrition } from "./approximate-food-nutrition";
 import { portionReferenceGrams } from "@/lib/services/vision/estimate-portion";
 
 function scalePer100g(per100g: NutritionEstimate, grams: number): NutritionEstimate {
@@ -35,7 +36,7 @@ export async function calculateNutrition(
   const mapped = verified
     ? await usda.lookupByFdcId(verified.usdaFdcId).catch(() => null)
     : null;
-  const per100g = mapped ?? await usda.lookupByName(candidate.name).catch(() => null);
+  const per100g = mapped ?? await usda.lookupByName(candidate.name).catch(() => null) ?? approximateFoodNutrition(candidate.name);
   if (!per100g) {
     // The current schema requires numeric nutrient values. Zero is a placeholder for
     // unknown data, NOT an assertion that this food has zero calories.
