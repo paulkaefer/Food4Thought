@@ -4,16 +4,6 @@ import type { VisionFoodCandidate } from "@/lib/services/vision/provider";
 import { createUsdaClient } from "./usda-provider";
 import { portionReferenceGrams } from "@/lib/services/vision/estimate-portion";
 
-const PER_100G_FALLBACK: NutritionEstimate = {
-  calories: 100,
-  proteinG: 3,
-  carbsG: 15,
-  fatG: 3,
-  micronutrients: {},
-  isApproximate: true,
-  uncertaintyReason: "No nutrition-database match; using a rough generic estimate",
-};
-
 function scalePer100g(per100g: NutritionEstimate, grams: number): NutritionEstimate {
   const factor = grams / 100;
   const micronutrients: Record<string, number> = {};
@@ -38,7 +28,16 @@ export async function calculateNutrition(
   portion: PortionEstimate,
 ): Promise<NutritionEstimate> {
   const usda = createUsdaClient();
-  const per100g = (await usda.lookupByName(candidate.name).catch(() => null)) ?? PER_100G_FALLBACK;
+  const per100g = await usda.lookupByName(candidate.name).catch(() => null);
+  if (!per100g) {
+    // The current schema requires numeric nutrient values. Zero is a placeholder for
+    // unknown data, NOT an assertion that this food has zero calories.
+    return {
+      ...emptyNutritionEstimate(),
+      isApproximate: true,
+      uncertaintyReason: "Nutrition unavailable: no verified USDA match. Zero values are placeholders, not measured nutrition; meal totals may be incomplete.",
+    };
+  }
   const grams = portionReferenceGrams(portion);
   const scaled = scalePer100g(per100g, grams);
 
