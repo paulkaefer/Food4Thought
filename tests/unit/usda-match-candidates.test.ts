@@ -6,7 +6,7 @@ afterEach(() => { globalThis.fetch = originalFetch; vi.restoreAllMocks(); });
 
 describe("USDA candidate search", () => {
   it("returns compatible bacon candidates, rejects raw/turkey, and deduplicates IDs", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({
       foods: [
         { fdcId: 10, description: "Pork, cured, bacon, cooked, pan-fried", dataType: "SR Legacy" },
         { fdcId: 11, description: "Pork, cured, bacon, raw", dataType: "SR Legacy" },
