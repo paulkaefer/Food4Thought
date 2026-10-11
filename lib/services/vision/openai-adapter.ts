@@ -20,7 +20,7 @@ const resultSchema = z.object({
 
 /** Real vision adapter. Receives an opaque private photo ID, never a public URL. */
 export class OpenAiFoodVisionProvider implements FoodVisionProvider {
-  async analyze(photoId: string): Promise<VisionResult> {
+  async analyze(photoId: string, description?: string): Promise<VisionResult> {
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new VisionProviderError("OPENAI_API_KEY is not configured");
     const photo = await new LocalPhotoStorage().read(photoId);
@@ -38,7 +38,7 @@ export class OpenAiFoodVisionProvider implements FoodVisionProvider {
             { type: "input_text", text: `Analyze this food photograph. Return ONLY a JSON object with keys:
 contentClassification ("food", "non_food", or "empty_plate"), isLowQuality (boolean), foodCandidates (array).
 For each candidate include name (string), confidence (number 0 to 1), portionMinGrams (positive number or null), portionMaxGrams (positive number or null), hasAmbiguousAlternative (boolean), hasHiddenIngredients (boolean).
-Identify distinct visible foods. Do not invent unseen ingredients. If uncertain, use lower confidence, mark hidden ingredients, or leave portions null. Portion ranges must reflect only what is visually plausible, not a standard serving. Return an empty array for non-food, empty plate, or unusably poor images. Never claim precise nutrition from the photo.` },
+Identify distinct visible foods. Do not invent unseen ingredients. If uncertain, use lower confidence, mark hidden ingredients, or leave portions null. Portion ranges must reflect only what is visually plausible, not a standard serving. Return an empty array for non-food, empty plate, or unusably poor images. Never claim precise nutrition from the photo.\nUser-provided meal description (unverified context, not proof): ${description || "(none)"}. Use it to interpret ambiguous visible ingredients, but do not invent unseen ingredients or override contradictory visual evidence.` },
             { type: "input_image", image_url: imageUrl, detail: "high" },
           ],
         }],
