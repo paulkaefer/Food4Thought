@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
-    "@vercel/blob": "^0.27.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "inngest": "^3.22.12",
