@@ -8,6 +8,7 @@ import { classifyContent } from "@/lib/services/vision/content-classification";
 import { generateFunEstimate } from "@/lib/services/vision/fun-estimate";
 import { estimatePortion } from "@/lib/services/vision/estimate-portion";
 import { calculateNutrition } from "@/lib/services/nutrition/calculate-nutrition";
+import { discoverFoodVocabulary } from "@/lib/services/nutrition/discover-food-vocabulary";
 import { selectNutritionSource } from "@/lib/services/nutrition/select-source";
 import { StubRestaurantNutritionProvider } from "@/lib/services/nutrition/restaurant-provider";
 import { labelAllergens } from "@/lib/services/restrictions/allergen-labeling";
@@ -122,6 +123,23 @@ export const processScan = inngest.createFunction(
           },
         }),
       );
+
+      // Discovery is advisory only. Keep meal persistence and nutrition unchanged
+      // if USDA discovery or vocabulary storage fails.
+      if (nutrition.uncertaintyReason?.includes("Nutrition unavailable: no verified USDA match") ||
+          nutrition.uncertaintyReason?.includes("nutrition unavailable without a verified USDA match")) {
+        await step.run(`discover-vocabulary-${candidate.name}`, async () => {
+          try {
+            return await discoverFoodVocabulary(candidate.name);
+          } catch (error) {
+            console.warn("[process-scan] Vocabulary discovery failed", {
+              food: candidate.name,
+              error: error instanceof Error ? error.message : "Unknown error",
+            });
+            return { status: "discovery_failed" };
+          }
+        });
+      }
     }
 
     const finalStatus = needsConfirmation ? "needs_confirmation" : "identified";
