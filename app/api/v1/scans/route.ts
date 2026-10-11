@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     const parsed = scanRequestSchema.parse({
       mode: formData.get("mode") ?? undefined,
       linkedMealLogEntryId: formData.get("linkedMealLogEntryId") ?? undefined,
+      description: formData.get("description") ?? undefined,
     });
 
     // TODO: migrate legacy *PhotoUrl database fields to provider-neutral photo IDs.
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     await inngest.send({
       name: "scan/submitted",
-      data: { mealLogEntryId: mealLogEntry.id, photoUrl: photoId, userId: DEV_USER_ID },
+      data: { mealLogEntryId: mealLogEntry.id, photoUrl: photoId, userId: DEV_USER_ID, description: parsed.description },
     });
 
     // Latency from request-received to job-dispatched, tracked toward the SC-001 p95 target (constitution IV).
