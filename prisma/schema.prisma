@@ -164,11 +164,9 @@ enum FoodVocabularyVerifiedBy {
   human
 }
 
-/**
- * Shared mappings from a recognized food description to a specific USDA record.
- * Only verified mappings may be reused for nutrition. User corrections do not
- * automatically become shared vocabulary.
- */
+/// Shared mappings from a recognized food description to a specific USDA record.
+/// Only verified mappings may be reused for nutrition. User corrections do not
+/// automatically become shared vocabulary.
 model FoodVocabulary {
   id                    String                           @id @default(uuid())
   normalizedDescription String                           @unique
