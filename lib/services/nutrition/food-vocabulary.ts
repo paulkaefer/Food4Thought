@@ -51,6 +51,8 @@ export async function proposeFoodMapping(mapping: Omit<VerifiedFoodMapping, "nor
   if (!normalizedDescription || !Number.isSafeInteger(mapping.usdaFdcId) || mapping.usdaFdcId <= 0) {
     throw new Error("Invalid food vocabulary proposal");
   }
+  // Do not overwrite existing proposals, rejected mappings, or verified mappings.
+  // Unique constraint also protects against concurrent duplicate submissions.
   await prisma.foodVocabulary.create({
     data: {
       normalizedDescription,
@@ -60,5 +62,8 @@ export async function proposeFoodMapping(mapping: Omit<VerifiedFoodMapping, "nor
       usdaDataType: mapping.usdaDataType,
       verificationStatus: "proposed",
     },
+  }).catch((error: unknown) => {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") return;
+    throw error;
   });
 }
