@@ -10,6 +10,7 @@ export class UsdaProviderError extends Error {
 
 interface UsdaFoodDataCentralClient {
   lookupByName(name: string): Promise<NutritionEstimate | null>;
+  lookupByFdcId(fdcId: number): Promise<NutritionEstimate | null>;
 }
 
 interface FoodSearchItem {
@@ -34,9 +35,61 @@ const ALIASES: Record<string, string> = {
 const AMBIGUOUS = /^(cheese|grated cheese|shredded cheese)$/i;
 const PREFERRED_TYPES = new Set(["Foundation", "SR Legacy", "Survey (FNDDS)"]);
 
+function nutritionFromUsdaFood(food: FoodSearchItem): NutritionEstimate | null {
+  const nutrients = food.foodNutrients ?? [];
+  const get = (id: number, unit: string): number | null => {
+    const nutrient = nutrients.find((n) => (n.nutrientId === id || n.nutrientNumber === String(id)) && n.unitName?.toLowerCase() === unit);
+    return typeof nutrient?.value === "number" && Number.isFinite(nutrient.value) ? nutrient.value : null;
+  };
+  // USDA nutrient IDs: 1008 energy (kcal), 1003 protein, 1005 carbohydrate, 1004 fat.
+  const calories = get(1008, "kcal") ?? get(2047, "kcal") ?? get(2048, "kcal");
+  const proteinG = get(1003, "g");
+  const carbsG = get(1005, "g");
+  const fatG = get(1004, "g");
+  if ([calories, proteinG, carbsG, fatG].some((value) => value === null)) return null;
+  return {
+    calories: calories!,
+    proteinG: proteinG!,
+    carbsG: carbsG!,
+    fatG: fatG!,
+    micronutrients: {},
+    isApproximate: true,
+    uncertaintyReason: "USDA reference values; preparation and variety may differ.",
+  };
+}
+
 /** Look up reference nutrients per 100g. Null means no trustworthy match, never zero nutrition. */
 export function createUsdaClient(apiKey = process.env.USDA_FDC_API_KEY): UsdaFoodDataCentralClient {
   return {
+    async lookupByFdcId(fdcId: number): Promise<NutritionEstimate | null> {
+      if (!apiKey || !Number.isSafeInteger(fdcId) || fdcId <= 0) return null;
+      try {
+        const response = await fetch(
+          `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${encodeURIComponent(apiKey)}`,
+          { signal: AbortSignal.timeout(7000) },
+        );
+        if (response.status === 404) return null;
+        if (!response.ok) throw new UsdaProviderError(`USDA FoodData Central returned HTTP ${response.status}`);
+        const food = (await response.json()) as FoodSearchItem;
+        if (!PREFERRED_TYPES.has(food.dataType ?? "")) return null;
+        // Detail responses nest nutrient metadata; flatten to the search response shape.
+        const detail = food as FoodSearchItem & {
+          foodNutrients?: Array<{ nutrient?: { id?: number; number?: string; unitName?: string }; amount?: number; nutrientId?: number; nutrientNumber?: string; unitName?: string; value?: number }>;
+        };
+        const normalized: FoodSearchItem = {
+          ...food,
+          foodNutrients: (detail.foodNutrients ?? []).map((entry) => ({
+            nutrientId: entry.nutrient?.id ?? entry.nutrientId,
+            nutrientNumber: entry.nutrient?.number ?? entry.nutrientNumber,
+            unitName: entry.nutrient?.unitName ?? entry.unitName,
+            value: entry.amount ?? entry.value,
+          })),
+        };
+        return nutritionFromUsdaFood(normalized);
+      } catch (error) {
+        throw new UsdaProviderError("Failed to retrieve USDA food by FDC ID", { cause: error });
+      }
+    },
     async lookupByName(name: string): Promise<NutritionEstimate | null> {
       if (!apiKey) return null;
       const query = NORMALIZE(name);
@@ -60,26 +113,7 @@ export function createUsdaClient(apiKey = process.env.USDA_FDC_API_KEY): UsdaFoo
         const match = foods.find((food) => NORMALIZE(food.description ?? "") === searchQuery)
           ?? foods.find((food) => NORMALIZE(food.description ?? "").startsWith(searchQuery + " "));
         if (!match) return null;
-        const nutrients = match.foodNutrients ?? [];
-        const get = (id: number, unit: string): number | null => {
-          const nutrient = nutrients.find((n) => (n.nutrientId === id || n.nutrientNumber === String(id)) && n.unitName?.toLowerCase() === unit);
-          return typeof nutrient?.value === "number" && Number.isFinite(nutrient.value) ? nutrient.value : null;
-        };
-        // USDA nutrient IDs: 1008 energy (kcal), 1003 protein, 1005 carbohydrate, 1004 fat.
-        const calories = get(1008, "kcal") ?? get(2047, "kcal") ?? get(2048, "kcal");
-        const proteinG = get(1003, "g");
-        const carbsG = get(1005, "g");
-        const fatG = get(1004, "g");
-        if ([calories, proteinG, carbsG, fatG].some((value) => value === null)) return null;
-        return {
-          calories: calories!,
-          proteinG: proteinG!,
-          carbsG: carbsG!,
-          fatG: fatG!,
-          micronutrients: {},
-          isApproximate: true,
-          uncertaintyReason: "USDA reference values; preparation and variety may differ.",
-        };
+        return nutritionFromUsdaFood(match);
       } catch (error) {
         throw new UsdaProviderError("Failed to look up nutrition data from USDA FoodData Central", { cause: error });
       }
