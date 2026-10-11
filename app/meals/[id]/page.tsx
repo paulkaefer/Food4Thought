@@ -10,7 +10,7 @@ export default async function MealDetailPage({ params }: { params: { id: string 
   });
 
   if (!mealLogEntry) {
-    return <p>We couldn't find that meal.</p>;
+    return <p>We couldn&apos;t find that meal.</p>;
   }
 
   return (

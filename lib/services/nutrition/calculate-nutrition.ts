@@ -52,14 +52,17 @@ export async function calculateNutrition(
   const scaled = scalePer100g(per100g, grams);
 
   const isApproximate = portion.isApproximate || candidate.hasHiddenIngredients || scaled.isApproximate;
-  let uncertaintyReason = scaled.uncertaintyReason;
+  // Compose disclosures: portion/hidden-ingredient warnings augment the source
+  // reason (USDA / generic / broad category) instead of overwriting it.
+  const reasons: string[] = [];
+  if (scaled.uncertaintyReason) reasons.push(scaled.uncertaintyReason);
   if (candidate.hasHiddenIngredients) {
-    uncertaintyReason = "Ingredients are hidden or unclear (e.g. sauces/toppings) — treat this as an estimate, mystery sauce and all.";
+    reasons.push("Ingredients are hidden or unclear (e.g. sauces/toppings) — treat this as an estimate, mystery sauce and all.");
   } else if (portion.isApproximate) {
-    uncertaintyReason = portion.portionConfidenceWarning ?? "Portion size is approximate — no scale reference was visible.";
+    reasons.push(portion.portionConfidenceWarning ?? "Portion size is approximate — no scale reference was visible.");
   }
 
-  return { ...scaled, isApproximate, uncertaintyReason };
+  return { ...scaled, isApproximate, uncertaintyReason: reasons.length > 0 ? reasons.join(" ") : null };
 }
 
 export function zeroNutrition(): NutritionEstimate {

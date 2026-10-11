@@ -45,7 +45,7 @@ export function ConfirmFoodItemDialog({
         <DialogTitle>Is this right?</DialogTitle>
       </DialogHeader>
       <p className="text-sm opacity-80">
-        We're only {Math.round(confidence * 100)}% sure — mind confirming or correcting the name?
+        We&apos;re only {Math.round(confidence * 100)}% sure — mind confirming or correcting the name?
       </p>
       <input
         className="mt-3 w-full rounded-md border border-border p-2 text-sm"

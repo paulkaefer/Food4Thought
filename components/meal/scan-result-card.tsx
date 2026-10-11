@@ -5,6 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScanResultEnvelope } from "./scan-result-envelope";
 import type { ApiEnvelope } from "@/lib/api/envelope";
+import {
+  hasIncompleteTotals,
+  isNutritionUnavailable,
+  sumNutritionEstimates,
+  type NutritionEstimate,
+} from "@/lib/models/nutrition-estimate";
 
 interface FoodItemView {
   id: string;
@@ -28,6 +34,22 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmed, setConfirmed] = useState<string[]>([]);
   const [updatedItems, setUpdatedItems] = useState<Record<string, FoodItemView>>({});
+
+  // Totals derive from the currently displayed items, so a confirmed correction
+  // (which replaces the item in updatedItems) recalculates them immediately.
+  const displayedItems = (foodItems ?? []).map((original) => updatedItems[original.id] ?? original);
+  const itemEstimates: NutritionEstimate[] = displayedItems.map((item) => ({
+    calories: item.calories,
+    proteinG: item.proteinG,
+    carbsG: item.carbsG,
+    fatG: item.fatG,
+    micronutrients: {},
+    isApproximate: item.nutritionIsApproximate,
+    uncertaintyReason: item.uncertaintyReason,
+  }));
+  const mealTotal = displayedItems.length > 0 ? sumNutritionEstimates(itemEstimates) : null;
+  const totalsIncomplete = hasIncompleteTotals(itemEstimates);
+
   async function confirm(item: FoodItemView) {
     if (!mealId || !(corrections[item.id] ?? item.name).trim()) return;
     setSaving(item.id);
@@ -47,7 +69,34 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
   }
   return (
     <div className="space-y-4">
-      <ScanResultEnvelope result={result} />
+      {/* The top-level needs_confirmation ("lookalike") banner is intentionally not rendered:
+          the per-item correction controls carry that flow without an extra alert. */}
+      {result.status !== "needs_confirmation" && <ScanResultEnvelope result={result} />}
+      {mealTotal && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Meal totals</CardTitle>
+            <div className="flex gap-1">
+              {mealTotal.isApproximate && <Badge variant="warning">approximate</Badge>}
+              {totalsIncomplete && <Badge variant="destructive">incomplete</Badge>}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <p className="text-lg font-semibold">
+              {Math.round(mealTotal.calories)} kcal · {Math.round(mealTotal.proteinG)}g protein ·{" "}
+              {Math.round(mealTotal.carbsG)}g carbs · {Math.round(mealTotal.fatG)}g fat
+            </p>
+            {totalsIncomplete ? (
+              <p className="text-sm opacity-70">
+                Some ingredients have unavailable nutrition — totals include only items with data and may be
+                lower than the actual meal.
+              </p>
+            ) : (
+              mealTotal.uncertaintyReason && <p className="text-sm opacity-70">{mealTotal.uncertaintyReason}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
       {foodItems?.map((original) => {
         const item = updatedItems[original.id] ?? original;
         return <Card key={item.id}>
@@ -64,11 +113,17 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
             </div>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <p>
-              {Math.round(item.calories)} kcal · {Math.round(item.proteinG)}g protein · {Math.round(item.carbsG)}g carbs ·{" "}
-              {Math.round(item.fatG)}g fat
-            </p>
-            {item.uncertaintyReason && <p className="opacity-70">{item.uncertaintyReason}</p>}
+            {isNutritionUnavailable(item) ? (
+              <p role="status">Nutrition unavailable — no verified or approximate match for this ingredient.</p>
+            ) : (
+              <p>
+                {Math.round(item.calories)} kcal · {Math.round(item.proteinG)}g protein · {Math.round(item.carbsG)}g
+                carbs · {Math.round(item.fatG)}g fat
+              </p>
+            )}
+            {item.uncertaintyReason && !isNutritionUnavailable(item) && (
+              <p className="opacity-70">{item.uncertaintyReason}</p>
+            )}
             {item.identificationStatus === "pending_user_confirmation" && !confirmed.includes(item.id) && (
               <div className="space-y-2 pt-2">
                 <label htmlFor={`correct-${item.id}`} className="block font-medium">What is this ingredient?</label>

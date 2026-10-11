@@ -54,3 +54,21 @@ export function scaleNutritionEstimate(estimate: NutritionEstimate, fraction: nu
     uncertaintyReason: estimate.uncertaintyReason,
   };
 }
+
+/** Marker phrase (case-insensitive) identifying placeholder-zero results where no trustworthy nutrition source exists. */
+export const NUTRITION_UNAVAILABLE_MARKER = "nutrition unavailable";
+
+/**
+ * True when an estimate represents unavailable data (placeholder zeros), never measured
+ * nutrition. Keyed on the uncertainty reason — deliberately not on zero values — so
+ * genuinely zero-calorie reference foods (e.g. water) are not mislabeled.
+ * Accepts any view-model carrying an uncertaintyReason, not just full NutritionEstimates.
+ */
+export function isNutritionUnavailable(estimate: Pick<NutritionEstimate, "uncertaintyReason">): boolean {
+  return estimate.uncertaintyReason?.toLowerCase().includes(NUTRITION_UNAVAILABLE_MARKER) ?? false;
+}
+
+/** True when any item lacks nutrition data, meaning summed meal totals are partial/incomplete. */
+export function hasIncompleteTotals(items: NutritionEstimate[]): boolean {
+  return items.some(isNutritionUnavailable);
+}

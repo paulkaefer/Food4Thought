@@ -1,0 +1,39 @@
+Food4Thought - UI Cleanup Report: Remove "lookalike" banner
+Date: 2026-10-11
+Branch: feature/ai-food-analysis
+Status: COMPLETE - awaiting review. Nothing committed or pushed.
+
+=====================================================================
+CHANGED FILE
+=====================================================================
+
+components/meal/scan-result-card.tsx (line ~47)
+- The ScanResultEnvelope banner is no longer rendered when
+  result.status === "needs_confirmation" (the yellow top-level
+  "This one's a bit of a lookalike - mind confirming what it actually
+  is?" banner). One-line conditional plus an explanatory comment.
+- Applies to both the scan page and the meal detail page, since both
+  render ScanResultCard.
+
+=====================================================================
+PRESERVED (VERIFIED, UNTOUCHED)
+=====================================================================
+
+- Per-item correction controls (pending_user_confirmation input +
+  confirm button) - the correction flow no longer needs the banner.
+- Nutrition uncertainty labels, "approximate" badges, and the
+  incomplete-total warning on the Meal totals card.
+- Allergen badges (shellfish, pork, tree nuts, peanuts).
+- All other envelope banners: identified, rejected_*, empty_plate,
+  fun estimates.
+- The status string and copy in lib/api/messages.ts - API responses
+  unchanged; vision analysis, nutrition calculations, and database
+  behavior untouched.
+
+=====================================================================
+VALIDATION RESULTS
+=====================================================================
+
+- npx tsc --noEmit : PASS
+- npm test         : 100/100 tests pass, 34/34 files
+- npm run lint     : PASS, 0 errors
