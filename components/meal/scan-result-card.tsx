@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScanResultEnvelope } from "./scan-result-envelope";
@@ -6,6 +9,7 @@ import type { ApiEnvelope } from "@/lib/api/envelope";
 interface FoodItemView {
   id: string;
   name: string;
+  identificationStatus: string;
   calories: number;
   proteinG: number;
   carbsG: number;
@@ -18,11 +22,35 @@ interface FoodItemView {
 
 /** Renders per-item and combined-total results, plus every rejected/approximate/fun-estimate state via the shared envelope. */
 export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foodItems?: FoodItemView[] }) {
+  const mealId = (result.data as { mealLogEntry?: { id: string } } | undefined)?.mealLogEntry?.id;
+  const [corrections, setCorrections] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirmed, setConfirmed] = useState<string[]>([]);
+  const [updatedItems, setUpdatedItems] = useState<Record<string, FoodItemView>>({});
+  async function confirm(item: FoodItemView) {
+    if (!mealId || !(corrections[item.id] ?? item.name).trim()) return;
+    setSaving(item.id);
+    try {
+      const response = await fetch(`/api/v1/meal-log-entries/${mealId}/food-items/${item.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmedName: (corrections[item.id] ?? item.name).trim() }),
+      });
+      const body = await response.json();
+      if (!response.ok || !body.data?.foodItem) throw new Error(body.message || "Could not update ingredient.");
+      setUpdatedItems((old) => ({ ...old, [item.id]: { ...item, ...body.data.foodItem } }));
+      setConfirmed((old) => [...old, item.id]);
+      setErrors((old) => ({ ...old, [item.id]: "" }));
+    } catch (error) {
+      setErrors((old) => ({ ...old, [item.id]: error instanceof Error ? error.message : "Update failed." }));
+    } finally { setSaving(null); }
+  }
   return (
     <div className="space-y-4">
       <ScanResultEnvelope result={result} />
-      {foodItems?.map((item) => (
-        <Card key={item.id}>
+      {foodItems?.map((original) => {
+        const item = updatedItems[original.id] ?? original;
+        return <Card key={item.id}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{item.name}</CardTitle>
             <div className="flex gap-1">
@@ -41,9 +69,18 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
               {Math.round(item.fatG)}g fat
             </p>
             {item.uncertaintyReason && <p className="opacity-70">{item.uncertaintyReason}</p>}
+            {item.identificationStatus === "pending_user_confirmation" && !confirmed.includes(item.id) && (
+              <div className="space-y-2 pt-2">
+                <label htmlFor={`correct-${item.id}`} className="block font-medium">What is this ingredient?</label>
+                <input id={`correct-${item.id}`} className="w-full rounded-md border p-2" placeholder="Correct ingredient name" value={corrections[item.id] ?? item.name} onChange={(event) => setCorrections((old) => ({ ...old, [item.id]: event.target.value }))} />
+                <button type="button" disabled={saving === item.id} onClick={() => void confirm({ ...item, name: corrections[item.id] ?? item.name })} className="rounded-md bg-foreground px-3 py-2 text-background disabled:opacity-50">{saving === item.id ? "Saving..." : "Confirm ingredient"}</button>
+                {errors[item.id] && <p role="alert" className="text-red-700">{errors[item.id]}</p>}
+              </div>
+            )}
+            {confirmed.includes(item.id) && <p className="text-green-700">Ingredient confirmed and nutrition recalculated.</p>}
           </CardContent>
-        </Card>
-      ))}
+        </Card>;
+      })}
     </div>
   );
 }
