@@ -3,6 +3,7 @@ import { z } from "zod";
 export const scanRequestSchema = z.object({
   mode: z.enum(["before", "after", "single"]).default("single"),
   linkedMealLogEntryId: z.string().uuid().optional(),
+  description: z.string().trim().max(500).optional(),
 });
 
 export const confirmFoodItemSchema = z.object({
