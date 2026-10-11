@@ -35,7 +35,9 @@ export async function calculateNutrition(
     return {
       ...emptyNutritionEstimate(),
       isApproximate: true,
-      uncertaintyReason: "Nutrition unavailable: no verified USDA match. Zero values are placeholders, not measured nutrition; meal totals may be incomplete.",
+      uncertaintyReason: candidate.hasHiddenIngredients
+        ? "Hidden or unclear ingredients; nutrition unavailable without a verified USDA match. Zero values are placeholders, not measured nutrition."
+        : "Nutrition unavailable: no verified USDA match. Zero values are placeholders, not measured nutrition; meal totals may be incomplete.",
     };
   }
   const grams = portionReferenceGrams(portion);
