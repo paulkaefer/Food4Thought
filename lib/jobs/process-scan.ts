@@ -28,10 +28,11 @@ export const processScan = inngest.createFunction(
   { id: "process-scan" },
   { event: "scan/submitted" },
   async ({ event, step }) => {
-    const { mealLogEntryId, photoUrl, userId } = event.data as {
+    const { mealLogEntryId, photoUrl, userId, description } = event.data as {
       mealLogEntryId: string;
       photoUrl: string;
       userId: string;
+      description?: string;
     };
 
     // p95 latency instrumentation for the scan pipeline (SC-001, constitution IV).
@@ -40,7 +41,7 @@ export const processScan = inngest.createFunction(
       console.info(`[process-scan] mealLogEntryId=${mealLogEntryId} status=${status} durationMs=${Date.now() - startedAt}`);
     };
 
-    const vision = await step.run("analyze-photo", () => analyzeWithTimeout(visionProvider, photoUrl, 30000));
+    const vision = await step.run("analyze-photo", () => analyzeWithTimeout(visionProvider, photoUrl, 30000, description));
 
     const { passesQuality } = checkImageQuality(vision);
     if (!passesQuality) {
