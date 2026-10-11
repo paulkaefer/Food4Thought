@@ -5,7 +5,7 @@ import { handleApiError } from "@/lib/api/error-handler";
 import { confirmFoodItemSchema } from "@/lib/api/schemas";
 import { calculateNutrition } from "@/lib/services/nutrition/calculate-nutrition";
 import { estimatePortion } from "@/lib/services/vision/estimate-portion";
-import { StubFoodVisionProvider } from "@/lib/services/vision/stub-adapter";
+import type { VisionFoodCandidate } from "@/lib/services/vision/provider";
 
 /**
  * PATCH /api/v1/meal-log-entries/{id}/food-items/{foodItemId} — confirms or corrects an identified
@@ -24,19 +24,29 @@ export async function PATCH(
       return NextResponse.json(envelope({ status: "error", message: "We couldn't find that food item." }), { status: 404 });
     }
 
-    const visionProvider = new StubFoodVisionProvider();
-    const vision = await visionProvider.analyze(body.confirmedName);
-    const candidate = vision.foodCandidates[0];
-    const portion = candidate ? estimatePortion(candidate) : null;
-    const nutrition = candidate ? await calculateNutrition(candidate, portion!) : null;
+    const candidate: VisionFoodCandidate = {
+      name: body.confirmedName,
+      confidence: 1,
+      boundingBox: { x: 0, y: 0, width: 0, height: 0 },
+      portionEstimate: {
+        amount: existing.portionAmount,
+        rangeMin: existing.portionRangeMin,
+        rangeMax: existing.portionRangeMax,
+        unit: existing.portionUnit,
+        isApproximate: existing.portionIsApproximate,
+        portionConfidenceWarning: existing.portionConfidenceWarning,
+      },
+      hasAmbiguousAlternative: false,
+      hasHiddenIngredients: false,
+    };
+    const nutrition = await calculateNutrition(candidate, estimatePortion(candidate));
 
     const updated = await prisma.foodItem.update({
       where: { id: params.foodItemId },
       data: {
         name: body.confirmedName,
         identificationStatus: "confirmed",
-        ...(nutrition
-          ? {
+        ...({
               calories: nutrition.calories,
               proteinG: nutrition.proteinG,
               carbsG: nutrition.carbsG,
@@ -44,8 +54,7 @@ export async function PATCH(
               micronutrients: nutrition.micronutrients,
               nutritionIsApproximate: nutrition.isApproximate,
               uncertaintyReason: nutrition.uncertaintyReason,
-            }
-          : {}),
+            }),
       },
     });
 
@@ -60,8 +69,10 @@ export async function PATCH(
       where: { foodItemId: params.foodItemId, confirmedByUser: false },
     });
 
+    const pending = await prisma.foodItem.count({ where: { mealLogEntryId: params.id, identificationStatus: "pending_user_confirmation" } });
+    await prisma.mealLogEntry.update({ where: { id: params.id }, data: { status: pending > 0 ? "needs_confirmation" : "identified" } });
     return NextResponse.json(
-      envelope({ status: "identified", message: "Updated!", data: { foodItem: updated, remainingFlags } }),
+      envelope({ status: pending > 0 ? "needs_confirmation" : "identified", message: "Ingredient updated.", data: { foodItem: updated, remainingFlags } }),
     );
   } catch (error) {
     return handleApiError(error);
