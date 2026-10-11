@@ -22,7 +22,7 @@ export interface VisionResult {
 
 /** Vendor-agnostic boundary around whatever food-recognition service is configured at deploy time (research.md #1). */
 export interface FoodVisionProvider {
-  analyze(photoUrl: string): Promise<VisionResult>;
+  analyze(photoUrl: string, description?: string): Promise<VisionResult>;
 }
 
 export class VisionProviderError extends Error {
@@ -38,9 +38,10 @@ export async function analyzeWithTimeout(
   provider: FoodVisionProvider,
   photoUrl: string,
   timeoutMs = 8000,
+  description?: string,
 ): Promise<VisionResult> {
   return Promise.race([
-    provider.analyze(photoUrl),
+    provider.analyze(photoUrl, description),
     new Promise<VisionResult>((_, reject) =>
       setTimeout(() => reject(new VisionProviderError("Vision provider timed out")), timeoutMs),
     ),
