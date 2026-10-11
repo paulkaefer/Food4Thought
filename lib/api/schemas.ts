@@ -9,6 +9,8 @@ export const scanRequestSchema = z.object({
 export const confirmFoodItemSchema = z.object({
   confirmedName: z.string().min(1, "confirmedName is required"),
   resolveConflicts: z.array(z.string().uuid()).default([]),
+  // Optional user-chosen USDA record, validated server-side against the item's stored candidates.
+  usdaFdcId: z.number().int().positive().optional(),
 });
 
 export const manualConsumptionSchema = z.object({

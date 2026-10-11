@@ -13,11 +13,30 @@ export interface VisionFoodCandidate {
   hasHiddenIngredients: boolean;
 }
 
+/**
+ * Meal-level observations from the photo analysis: visible preparation, foods appearing
+ * together, cuisine clues, and other relevant observations. Every field is visible-evidence
+ * only — never inferred hidden ingredients. Optional so existing providers/stubs and older
+ * responses remain valid (absent means "no context gathered").
+ */
+export interface MealContext {
+  /** Visible cooking methods and preparation (e.g. grilled, fried, breaded). */
+  preparation: string | null;
+  /** Accompanying/side foods observed in the same meal. */
+  accompaniments: string | null;
+  /** Cuisine clues when visually supported (e.g. plating, condiments, serving style). */
+  cuisineClues: string | null;
+  /** Other relevant visible observations (e.g. sauce color/consistency, garnishes). */
+  observations: string | null;
+}
+
 export interface VisionResult {
   contentClassification: ContentClassification;
   /** true when the photo is too blurry/poorly lit to identify anything reliably (FR-008) */
   isLowQuality: boolean;
   foodCandidates: VisionFoodCandidate[];
+  /** Meal-level context for later candidate matching; absent from older/stub responses. */
+  mealContext?: MealContext;
 }
 
 /** Vendor-agnostic boundary around whatever food-recognition service is configured at deploy time (research.md #1). */

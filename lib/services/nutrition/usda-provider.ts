@@ -8,12 +8,21 @@ export class UsdaProviderError extends Error {
   }
 }
 
+export interface UsdaNameMatch {
+  fdcId: number;
+  description: string;
+  estimate: NutritionEstimate;
+}
+
 interface UsdaFoodDataCentralClient {
   lookupByName(name: string): Promise<NutritionEstimate | null>;
+  /** Same conservative search as lookupByName, plus the matched record's identity for provenance. */
+  matchByName(name: string): Promise<UsdaNameMatch | null>;
   lookupByFdcId(fdcId: number): Promise<NutritionEstimate | null>;
 }
 
 interface FoodSearchItem {
+  fdcId?: number;
   description?: string;
   dataType?: string;
   foodNutrients?: Array<{ nutrientId?: number; nutrientNumber?: string; nutrientName?: string; unitName?: string; value?: number }>;
@@ -40,6 +49,11 @@ const PREFERRED_TYPES = new Set(["Foundation", "SR Legacy", "Survey (FNDDS)"]);
  * prefix candidate's extra description text (e.g. "steak" must never match
  * "Steak sauce"). A prefix match is not accepted merely because its description
  * begins with the query.
+ *
+ * "tartare"/"carpaccio" are raw-preparation DISH names: for a query without any
+ * preparation token they describe a materially different (raw) dish, so they belong
+ * with the category words above. The bare word "raw" is deliberately NOT included —
+ * canonical records for foods eaten raw (e.g. "Apple, raw") must stay eligible.
  */
 const INCOMPATIBLE_SUFFIX_WORDS = new Set([
   "sauce", "sauces", "sandwich", "soup", "dip", "dressing", "gravy", "stew",
@@ -47,6 +61,7 @@ const INCOMPATIBLE_SUFFIX_WORDS = new Set([
   "chip", "chips", "cracker", "crackers", "cake", "cookie", "cookies", "bread",
   "roll", "bun", "juice", "drink", "beverage", "smoothie", "cocktail",
   "noodle", "noodles", "pasta", "rice",
+  "tartare", "carpaccio",
 ]);
 
 /**
@@ -84,6 +99,41 @@ function nutritionFromUsdaFood(food: FoodSearchItem): NutritionEstimate | null {
 
 /** Look up reference nutrients per 100g. Null means no trustworthy match, never zero nutrition. */
 export function createUsdaClient(apiKey = process.env.USDA_FDC_API_KEY): UsdaFoodDataCentralClient {
+  const matchByName = async (name: string): Promise<UsdaNameMatch | null> => {
+    if (!apiKey) return null;
+    const query = NORMALIZE(name);
+    if (!query || AMBIGUOUS.test(name.trim()) || /unknown|puree|pureed|sauce|spread| or /.test(query)) return null;
+    const searchName = ALIASES[query] ?? name;
+    const searchQuery = NORMALIZE(searchName);
+    try {
+      const response = await fetch(
+        `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(apiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: searchName, dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)"], pageSize: 15 }),
+          signal: AbortSignal.timeout(7000),
+        },
+      );
+      if (!response.ok) throw new UsdaProviderError(`USDA FoodData Central returned HTTP ${response.status}`);
+      const payload = (await response.json()) as { foods?: FoodSearchItem[] };
+      const foods = (payload.foods ?? []).filter((food) => food.description && PREFERRED_TYPES.has(food.dataType ?? ""));
+      // Conservative matching: require the complete food name as a phrase, not just a shared word.
+      // Prefix candidates are accepted only when their extra words stay food-compatible,
+      // so "steak" can never resolve to "Steak sauce" or another materially different food.
+      const match = foods.find((food) => NORMALIZE(food.description ?? "") === searchQuery)
+        ?? foods.find((food) => {
+          const description = NORMALIZE(food.description ?? "");
+          return description.startsWith(searchQuery + " ") && isCompatiblePrefixMatch(searchQuery, description);
+        });
+      if (!match || typeof match.fdcId !== "number" || !match.description) return null;
+      const estimate = nutritionFromUsdaFood(match);
+      return estimate ? { fdcId: match.fdcId, description: match.description, estimate } : null;
+    } catch (error) {
+      throw new UsdaProviderError("Failed to look up nutrition data from USDA FoodData Central", { cause: error });
+    }
+  };
+
   return {
     async lookupByFdcId(fdcId: number): Promise<NutritionEstimate | null> {
       if (!apiKey || !Number.isSafeInteger(fdcId) || fdcId <= 0) return null;
@@ -116,37 +166,8 @@ export function createUsdaClient(apiKey = process.env.USDA_FDC_API_KEY): UsdaFoo
       }
     },
     async lookupByName(name: string): Promise<NutritionEstimate | null> {
-      if (!apiKey) return null;
-      const query = NORMALIZE(name);
-      if (!query || AMBIGUOUS.test(name.trim()) || /unknown|puree|pureed|sauce|spread| or /.test(query)) return null;
-      const searchName = ALIASES[query] ?? name;
-      const searchQuery = NORMALIZE(searchName);
-      try {
-        const response = await fetch(
-          `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(apiKey)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: searchName, dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)"], pageSize: 15 }),
-            signal: AbortSignal.timeout(7000),
-          },
-        );
-        if (!response.ok) throw new UsdaProviderError(`USDA FoodData Central returned HTTP ${response.status}`);
-        const payload = (await response.json()) as { foods?: FoodSearchItem[] };
-        const foods = (payload.foods ?? []).filter((food) => food.description && PREFERRED_TYPES.has(food.dataType ?? ""));
-        // Conservative matching: require the complete food name as a phrase, not just a shared word.
-        // Prefix candidates are accepted only when their extra words stay food-compatible,
-        // so "steak" can never resolve to "Steak sauce" or another materially different food.
-        const match = foods.find((food) => NORMALIZE(food.description ?? "") === searchQuery)
-          ?? foods.find((food) => {
-            const description = NORMALIZE(food.description ?? "");
-            return description.startsWith(searchQuery + " ") && isCompatiblePrefixMatch(searchQuery, description);
-          });
-        if (!match) return null;
-        return nutritionFromUsdaFood(match);
-      } catch (error) {
-        throw new UsdaProviderError("Failed to look up nutrition data from USDA FoodData Central", { cause: error });
-      }
+      return (await matchByName(name))?.estimate ?? null;
     },
+    matchByName,
   };
 }

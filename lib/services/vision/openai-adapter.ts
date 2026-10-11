@@ -12,10 +12,18 @@ const candidateSchema = z.object({
   hasAmbiguousAlternative: z.boolean(),
   hasHiddenIngredients: z.boolean(),
 });
+const mealContextSchema = z.object({
+  preparation: z.string().nullable(),
+  accompaniments: z.string().nullable(),
+  cuisineClues: z.string().nullable(),
+  observations: z.string().nullable(),
+});
 const resultSchema = z.object({
   contentClassification: z.enum(["food", "non_food", "empty_plate"]),
   isLowQuality: z.boolean(),
   foodCandidates: z.array(candidateSchema).max(20),
+  // Optional so older/alternate provider responses without context remain valid.
+  mealContext: mealContextSchema.nullable().optional(),
 });
 
 /** Real vision adapter. Receives an opaque private photo ID, never a public URL. */
@@ -38,6 +46,7 @@ export class OpenAiFoodVisionProvider implements FoodVisionProvider {
             { type: "input_text", text: `Analyze this food photograph. Return ONLY a JSON object with keys:
 contentClassification ("food", "non_food", or "empty_plate"), isLowQuality (boolean), foodCandidates (array).
 For each candidate include name (string), confidence (number 0 to 1), portionMinGrams (positive number or null), portionMaxGrams (positive number or null), hasAmbiguousAlternative (boolean), hasHiddenIngredients (boolean).
+Also include mealContext: an object with keys preparation, accompaniments, cuisineClues, observations (string or null each), summarizing meal-level visible evidence: cooking methods and preparation you can see, foods appearing together, cuisine clues, and other relevant observations such as sauce color or consistency. Describe only what is visible; use null when there is no visible evidence. Never state hidden or unseen ingredients as fact.
 Identify distinct visible foods. Do not invent unseen ingredients. If uncertain, use lower confidence, mark hidden ingredients, or leave portions null. Portion ranges must reflect only what is visually plausible, not a standard serving. Return an empty array for non-food, empty plate, or unusably poor images. Never claim precise nutrition from the photo.\nUser-provided meal description (unverified context, not proof): ${description || "(none)"}. Use it to interpret ambiguous visible ingredients, but do not invent unseen ingredients or override contradictory visual evidence.` },
             { type: "input_image", image_url: imageUrl, detail: "high" },
           ],
@@ -63,6 +72,7 @@ Identify distinct visible foods. Do not invent unseen ingredients. If uncertain,
     return {
       contentClassification: parsed.contentClassification,
       isLowQuality: parsed.isLowQuality,
+      mealContext: parsed.mealContext ?? undefined,
       foodCandidates: parsed.foodCandidates.map((candidate) => ({
         name: candidate.name,
         confidence: candidate.confidence,

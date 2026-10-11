@@ -113,6 +113,9 @@ const categoryRules: ReadonlyArray<{
   },
 ];
 
+/** Tier-2 reason: exact entry in the generic reference table. Exported so discovery triggers share one source of truth. */
+export const GENERIC_REFERENCE_REASON = "Generic food reference estimate; variety, ingredients and preparation may differ.";
+
 function toEstimate(values: [number, number, number, number], uncertaintyReason: string): NutritionEstimate {
   const [calories, proteinG, carbsG, fatG] = values;
   return { calories, proteinG, carbsG, fatG, micronutrients: {}, isApproximate: true, uncertaintyReason };
@@ -127,7 +130,7 @@ export function approximateFoodNutrition(name: string): NutritionEstimate | null
   const normalized = normalizeFoodDescription(name);
   const exact = reference[normalized];
   if (exact) {
-    return toEstimate(exact, "Generic food reference estimate; variety, ingredients and preparation may differ.");
+    return toEstimate(exact, GENERIC_REFERENCE_REASON);
   }
   const rule = categoryRules.find((candidate) => candidate.pattern.test(normalized));
   if (rule) {

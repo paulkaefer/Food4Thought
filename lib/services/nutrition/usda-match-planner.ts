@@ -30,34 +30,45 @@ export function planUsdaSearches(description: string): string[] {
   return queries.slice(0, 3);
 }
 
+const tokens = (s: string) => s.split(" ").filter(Boolean);
+
+// Only grammatical, shape, and standardized preparation terms are ignorable.
+// In particular, no meat, vegetable, sauce, or cheese variety is ignorable.
+const NOISE = new Set(["with", "and", "of", "the", "in", "a", "an", "pieces", "piece",
+  "sliced", "slice", "chopped", "diced", "minced", "grated", "shredded",
+  "pork", "cured", "cooked", "pan", "fried", "prepared", "plain"]);
+
+/** Canonicalize common plural variants so they compare equal across gates and dedup keys. */
+export const canonicalFoodWord = (word: string) => {
+  if (word === "tomatoes") return "tomato";
+  if (word === "potatoes") return "potato";
+  if (word === "nuts") return "nut";
+  return word;
+};
+
+const core = (words: string[]) => new Set(words.map(canonicalFoodWord).filter((word) => !NOISE.has(word)));
+
+/** Hard safety rules shared by both gates: no animal substitution, no raw<->cooked swaps. */
+function violatesSafetyRules(sourceSet: Set<string>, targetSet: Set<string>): boolean {
+  if (sourceSet.has("bacon") && targetSet.has("turkey") !== sourceSet.has("turkey")) return true;
+  if (targetSet.has("raw") && ["cooked", "fried", "baked", "roasted"].some((w) => sourceSet.has(w))) return true;
+  if (sourceSet.has("raw") && ["cooked", "fried", "baked", "roasted"].some((w) => targetSet.has(w))) return true;
+  if (sourceSet.has("bacon") && sourceSet.has("fried") && !targetSet.has("fried")) return true;
+  return false;
+}
+
 /**
  * Conservative lexical compatibility gate. This is not a semantic food model:
  * unknown ingredients and insufficiently described matches must be reviewed,
- * not assumed equivalent.
+ * not assumed equivalent. Used for anything user-facing.
  */
 export function candidateIsCompatible(description: string, usdaDescription: string): boolean {
   const source = normalizeFoodDescription(description);
   const target = normalizeFoodDescription(usdaDescription);
   if (!source || !target || /^(cheese|grated cheese|shredded cheese)$/.test(source)) return false;
 
-  const tokens = (s: string) => s.split(" ").filter(Boolean);
   const sourceTokens = tokens(source);
   const targetTokens = tokens(target);
-  const sourceSet = new Set(sourceTokens);
-  const targetSet = new Set(targetTokens);
-
-  // Only grammatical, shape, and standardized preparation terms are ignorable.
-  // In particular, no meat, vegetable, sauce, or cheese variety is ignorable.
-  const noise = new Set(["with", "and", "of", "the", "in", "a", "an", "pieces", "piece",
-    "sliced", "slice", "chopped", "diced", "minced", "grated", "shredded",
-    "pork", "cured", "cooked", "pan", "fried", "prepared", "plain"]);
-  const canonical = (word: string) => {
-    if (word === "tomatoes") return "tomato";
-    if (word === "potatoes") return "potato";
-    if (word === "nuts") return "nut";
-    return word;
-  };
-  const core = (words: string[]) => new Set(words.map(canonical).filter((word) => !noise.has(word)));
 
   const requested = core(sourceTokens);
   const offered = core(targetTokens);
@@ -72,10 +83,30 @@ export function candidateIsCompatible(description: string, usdaDescription: stri
   for (const word of offered) if (!requested.has(word)) return false;
 
   // Do not substitute turkey bacon for pork bacon, or raw for cooked food.
-  if (sourceSet.has("bacon") && targetSet.has("turkey") !== sourceSet.has("turkey")) return false;
-  if (targetSet.has("raw") && ["cooked", "fried", "baked", "roasted"].some((w) => sourceSet.has(w))) return false;
-  if (sourceSet.has("raw") && ["cooked", "fried", "baked", "roasted"].some((w) => targetSet.has(w))) return false;
-  if (sourceSet.has("bacon") && sourceSet.has("fried") && !targetSet.has("fried")) return false;
+  if (violatesSafetyRules(new Set(sourceTokens), new Set(targetTokens))) return false;
 
   return true;
+}
+
+/**
+ * Looser gate for the review queue only: every requested concept must be present,
+ * but extra USDA-side ingredients are allowed (they lower the candidate's score).
+ * A human reviewer makes the final call, so recall matters more than precision here.
+ * The hard safety rules are identical to the strict gate. Never used for live nutrition.
+ */
+export function candidateIsReviewable(description: string, usdaDescription: string): boolean {
+  const source = normalizeFoodDescription(description);
+  const target = normalizeFoodDescription(usdaDescription);
+  if (!source || !target || /^(cheese|grated cheese|shredded cheese)$/.test(source)) return false;
+
+  const sourceTokens = tokens(source);
+  const targetTokens = tokens(target);
+
+  const requested = core(sourceTokens);
+  const offered = core(targetTokens);
+  if (!requested.size || !offered.size) return false;
+
+  for (const word of requested) if (!offered.has(word)) return false;
+
+  return !violatesSafetyRules(new Set(sourceTokens), new Set(targetTokens));
 }

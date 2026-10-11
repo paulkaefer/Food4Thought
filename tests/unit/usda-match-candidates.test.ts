@@ -33,4 +33,24 @@ describe("USDA candidate search", () => {
     expect(await findUsdaMatchCandidates("gnocchi", "")).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("admits extra-ingredient records into the review queue for human review", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({
+      foods: [
+        { fdcId: 20, description: "Steak, broiled", dataType: "Survey (FNDDS)" },
+        { fdcId: 21, description: "Steak sauce", dataType: "Survey (FNDDS)" },
+      ],
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock;
+    const matches = await findUsdaMatchCandidates("steak", "test-key");
+    expect(matches.map((item) => item.fdcId)).toEqual(expect.arrayContaining([20, 21]));
+    expect(matches).toHaveLength(2);
+  });
+
+  it("stops searching once the discovery time budget is exhausted", async () => {
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock;
+    expect(await findUsdaMatchCandidates("fried bacon pieces", "test-key", -1)).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

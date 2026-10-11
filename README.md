@@ -40,6 +40,21 @@ the full technical context and rationale.
    npx inngest-cli dev
    ```
 
+### AI food analysis (optional)
+
+Real photo analysis and AI-assisted USDA matching are off by default (deterministic stubs, no
+external calls). To enable them locally:
+
+- `VISION_PROVIDER=openai` + `OPENAI_API_KEY` (optional `OPENAI_VISION_MODEL`) — real photo analysis.
+- `USDA_MATCH_SELECTOR=openai` + `OPENAI_API_KEY` (optional `OPENAI_MATCH_MODEL`) — one batched,
+  text-only AI selection of the best-supported USDA record per ingredient, using the first
+  analysis's meal context. AI selections stay meal-local (`ai_selected`); they never become
+  globally verified mappings.
+- `USDA_FDC_API_KEY` — USDA FoodData Central lookups and candidate assembly.
+
+Users can still correct any ingredient name or pick a different USDA record from the assembled
+candidate list (`user_selected`) afterward.
+
 ## Testing
 
 ```powershell

@@ -15,7 +15,9 @@ type Macros = [number, number, number, number];
 /** Mock an FDC foods/search response: [kcal, proteinG, carbsG, fatG] per 100g. */
 function mockSearch(foods: Array<{ description: string; macros: Macros }>) {
   const payload = {
-    foods: foods.map((food) => ({
+    foods: foods.map((food, index) => ({
+      // The real FDC search response always includes an fdcId; the match path requires it.
+      fdcId: 1000 + index,
       description: food.description,
       dataType: "Survey (FNDDS)",
       foodNutrients: [
@@ -71,5 +73,32 @@ describe("USDA name-search prefix compatibility", () => {
     mockSearch([{ description: "Rice, white, cooked", macros: [130, 2.7, 28, 0.3] }]);
     expect(await createUsdaClient("test-key").lookupByName("rice"))
       .toMatchObject({ calories: 130, carbsG: 28 });
+  });
+
+  it("never resolves generic 'steak' to raw-preparation dishes (tartare, carpaccio)", async () => {
+    mockSearch([
+      { description: "Steak tartare", macros: [198, 20, 1, 12] },
+      { description: "Steak carpaccio", macros: [150, 22, 0, 6] },
+    ]);
+
+    // Raw dishes are materially different from a cooked steak: no match, approximate fallback.
+    expect(await createUsdaClient("test-key").lookupByName("steak")).toBeNull();
+  });
+
+  it("keeps cooked steak records eligible while rejecting raw-preparation dishes", async () => {
+    mockSearch([
+      { description: "Steak tartare", macros: [198, 20, 1, 12] },
+      { description: "Steak, broiled", macros: [210, 28, 0, 10] },
+    ]);
+
+    expect(await createUsdaClient("test-key").lookupByName("steak"))
+      .toMatchObject({ calories: 210, proteinG: 28 });
+  });
+
+  it("keeps canonical raw records for foods eaten raw (apple -> Apple, raw)", async () => {
+    mockSearch([{ description: "Apple, raw", macros: [52, 0.3, 14, 0.2] }]);
+
+    expect(await createUsdaClient("test-key").lookupByName("apple"))
+      .toMatchObject({ calories: 52, carbsG: 14 });
   });
 });

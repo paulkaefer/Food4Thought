@@ -71,6 +71,16 @@ enum FoodItemDataSource {
   restaurant_data
 }
 
+/// How the USDA record serving a food item's nutrition was chosen. AI-selected and
+/// name-search matches are meal-local only; only human review promotes a mapping
+/// into the shared FoodVocabulary table.
+enum FoodItemUsdaMatchSource {
+  verified_mapping
+  ai_selected
+  name_search
+  user_selected
+}
+
 model FoodItem {
   id                   String                        @id @default(uuid())
   mealLogEntryId       String
@@ -97,6 +107,15 @@ model FoodItem {
   micronutrients       Json    @default("{}")
   nutritionIsApproximate Boolean @default(false)
   uncertaintyReason    String?
+
+  // USDA match traceability: which record served nutrition and how it was chosen.
+  // Null for legacy rows, approximate fallbacks, and non-USDA sources.
+  usdaFdcId            Int?
+  usdaMatchSource      FoodItemUsdaMatchSource?
+  usdaDescription      String?
+  // Bounded, deduplicated USDA candidate set assembled at scan time, offered for
+  // later correction. Only USDA-returned FDC IDs; never automatically verified.
+  usdaCandidates       Json?
 
   allergenLabels       AllergenLabel[]
   dietaryConflictFlags DietaryConflictFlag[]
@@ -182,4 +201,25 @@ model FoodVocabulary {
 
   @@index([usdaFdcId])
   @@index([verificationStatus])
+}
+
+/// Review queue of plausible USDA records for a recognized food description.
+/// Multiple candidates may exist per food name; rejecting one never blocks the others.
+/// Candidates are never used for nutrition until review promotes one into FoodVocabulary.
+model FoodMappingCandidate {
+  id                    String                           @id @default(uuid())
+  normalizedDescription String
+  foodDescription       String
+  usdaFdcId             Int
+  usdaDescription       String
+  usdaDataType          String
+  score                 Float                            @default(0)
+  status                FoodVocabularyVerificationStatus @default(proposed)
+  createdAt             DateTime                         @default(now())
+  updatedAt             DateTime                         @updatedAt
+  reviewedAt            DateTime?
+
+  @@unique([normalizedDescription, usdaFdcId])
+  @@index([normalizedDescription])
+  @@index([status])
 }
