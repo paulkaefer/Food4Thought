@@ -15,11 +15,12 @@ export default function ScanPage() {
   const [result, setResult] = useState<ApiEnvelope | null>(null);
   const [polling, setPolling] = useState(false);
 
-  async function handleFileSelected(file: File) {
+  async function handleFileSelected(file: File, description: string) {
     setPolling(true);
     setResult(null);
     const formData = new FormData();
     formData.append("photo", file);
+    if (description) formData.append("description", description);
 
     const submitRes = await fetch("/api/v1/scans", { method: "POST", body: formData });
     const submitBody = (await submitRes.json()) as ApiEnvelope<{ jobId: string }>;
