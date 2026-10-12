@@ -106,8 +106,8 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
           </CardHeader>
           <CardContent className="space-y-1">
             <p className="text-lg font-semibold">
-              {Math.round(mealTotal.calories)} Calories · {Math.round(mealTotal.proteinG)}g protein ·{" "}
-              {Math.round(mealTotal.carbsG)}g carbs · {Math.round(mealTotal.fatG)}g fat
+              {Math.round(mealTotal.calories)} Calories · {Math.round(mealTotal.proteinG)}g Protein ·{" "}
+              {Math.round(mealTotal.carbsG)}g Carbs · {Math.round(mealTotal.fatG)}g Fat
             </p>
             {totalsIncomplete ? (
               <p className="text-sm opacity-70">
@@ -142,8 +142,8 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
               <p role="status">Nutrition unavailable — no verified or approximate match for this ingredient.</p>
             ) : (
               <p>
-                {Math.round(item.calories)} Calories · {Math.round(item.proteinG)}g protein · {Math.round(item.carbsG)}g
-                carbs · {Math.round(item.fatG)}g fat
+                {Math.round(item.calories)} Calories · {Math.round(item.proteinG)}g Protein · {Math.round(item.carbsG)}g
+                Carbs · {Math.round(item.fatG)}g Fat
               </p>
             )}
             {item.uncertaintyReason && !isNutritionUnavailable(item) && (
