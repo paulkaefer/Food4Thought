@@ -64,7 +64,7 @@ describe("ScanResultCard — USDA match feedback", () => {
 
     // Pending state is explicit, displayed nutrition is untouched, nothing was sent.
     expect(await screen.findByText(/Pending selection/)).toBeTruthy();
-    expect(screen.getAllByText(/53 kcal/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/53 Calories/).length).toBeGreaterThan(0);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -99,8 +99,8 @@ describe("ScanResultCard — USDA match feedback", () => {
     expect(matchSelect().value).toBe("");
     expect(screen.queryByText(/Pending selection/)).toBeNull();
     // Nutrition now reflects the newly applied record.
-    expect(screen.queryByText(/53 kcal/)).toBeNull();
-    expect(screen.getAllByText(/120 kcal/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/53 Calories/)).toBeNull();
+    expect(screen.getAllByText(/120 Calories/).length).toBeGreaterThan(0);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -132,7 +132,7 @@ describe("ScanResultCard — USDA match feedback", () => {
     // Not successful and nothing changed: no confirmation text, applied match and
     // nutrition still reflect the previously applied record.
     expect(screen.queryByText(/Ingredient confirmed/)).toBeNull();
-    expect(screen.getAllByText(/53 kcal/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/53 Calories/).length).toBeGreaterThan(0);
     expect(screen.getByText(/USDA match: Sauce, pasta \(your choice\)/)).toBeTruthy();
     // The failed choice stays visible as pending rather than looking applied.
     expect(matchSelect().value).toBe(String(PENDING_CANDIDATE.fdcId));

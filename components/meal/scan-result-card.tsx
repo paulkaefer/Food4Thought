@@ -106,7 +106,7 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
           </CardHeader>
           <CardContent className="space-y-1">
             <p className="text-lg font-semibold">
-              {Math.round(mealTotal.calories)} kcal · {Math.round(mealTotal.proteinG)}g protein ·{" "}
+              {Math.round(mealTotal.calories)} Calories · {Math.round(mealTotal.proteinG)}g protein ·{" "}
               {Math.round(mealTotal.carbsG)}g carbs · {Math.round(mealTotal.fatG)}g fat
             </p>
             {totalsIncomplete ? (
@@ -142,7 +142,7 @@ export function ScanResultCard({ result, foodItems }: { result: ApiEnvelope; foo
               <p role="status">Nutrition unavailable — no verified or approximate match for this ingredient.</p>
             ) : (
               <p>
-                {Math.round(item.calories)} kcal · {Math.round(item.proteinG)}g protein · {Math.round(item.carbsG)}g
+                {Math.round(item.calories)} Calories · {Math.round(item.proteinG)}g protein · {Math.round(item.carbsG)}g
                 carbs · {Math.round(item.fatG)}g fat
               </p>
             )}
