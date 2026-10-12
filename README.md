@@ -7,6 +7,11 @@ honest (and lighthearted) about how uncertain visual estimates are.
 See [specs/001-meal-photo-nutrition-tracking/](specs/001-meal-photo-nutrition-tracking/) for the
 full spec, plan, data model, API contract, and quickstart validation scenarios.
 
+> **New here?** Start with the [Local Setup Guide](docs/LOCAL_SETUP.md) — a beginner-friendly,
+> OS-specific walkthrough from clean clone to first successful photo scan. The reconstruction
+> audit lives in [specs/local-reconstruction/](specs/local-reconstruction/spec.md) (spec,
+> [plan](specs/local-reconstruction/plan.md), [task checklist](specs/local-reconstruction/tasks.md)).
+
 ## Stack
 
 Next.js 14 (App Router) + TypeScript, shadcn/ui + Tailwind, Prisma + PostgreSQL, private local
@@ -14,6 +19,9 @@ photo storage, Inngest for background jobs. See [plan.md](specs/001-meal-photo-n
 the full technical context and rationale.
 
 ## Setup
+
+The concise version is below; the full walkthrough with per-step expected results and
+troubleshooting is in [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md).
 
 1. Copy `.env.example` to `.env` and fill in the required values:
    - `DATABASE_URL` (PostgreSQL).
