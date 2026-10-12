@@ -40,14 +40,25 @@ the full technical context and rationale.
 
    (`--legacy-peer-deps` works around an unrelated optional peer-dependency conflict between
    `inngest`'s SvelteKit integration and this project's Vite-based tooling.)
-3. Generate the Prisma client and run migrations against a real PostgreSQL database:
+3. Generate the Prisma client and apply migrations against a real PostgreSQL database:
 
    ```powershell
    npx prisma generate
-   npx prisma migrate dev --name init
+   npx prisma migrate deploy
    ```
 
-4. Run the app and the Inngest dev server in separate terminals:
+   (`migrate deploy` applies the checked-in migrations non-interactively. Use
+   `npx prisma migrate dev --name <change>` instead when you are authoring new migrations.)
+4. Seed the demo user profile that the scan API associates uploads with:
+
+   ```powershell
+   npm run db:seed
+   ```
+
+   The seed is idempotent — safe to re-run, and it never modifies an existing record. Skipping
+   this step on a fresh database makes the first `POST /api/v1/scans` fail with a Prisma P2003
+   foreign-key error, because the hardcoded demo `UserProfile` does not exist yet.
+5. Run the app and the Inngest dev server in separate terminals:
 
    ```powershell
    npm run dev
