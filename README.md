@@ -9,15 +9,29 @@ full spec, plan, data model, API contract, and quickstart validation scenarios.
 
 ## Stack
 
-Next.js 14 (App Router) + TypeScript, shadcn/ui + Tailwind, Prisma + PostgreSQL, Vercel Blob,
-Inngest for background jobs. See [plan.md](specs/001-meal-photo-nutrition-tracking/plan.md) for
+Next.js 14 (App Router) + TypeScript, shadcn/ui + Tailwind, Prisma + PostgreSQL, private local
+photo storage, Inngest for background jobs. See [plan.md](specs/001-meal-photo-nutrition-tracking/plan.md) for
 the full technical context and rationale.
 
 ## Setup
 
-1. Copy `.env.example` to `.env` and fill in `DATABASE_URL` (PostgreSQL), `BLOB_READ_WRITE_TOKEN`
-   (Vercel Blob), and `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` if running against real Inngest
-   Cloud (the local Inngest dev server works without these).
+1. Copy `.env.example` to `.env` and fill in the required values:
+   - `DATABASE_URL` (PostgreSQL).
+   - `PHOTO_STORAGE_DIR` — directory for private meal-photo storage. The default convention is
+     `./data/photos` (`data/` is git-ignored). The directory is created automatically on first
+     upload, or create it up front:
+
+     ```powershell
+     New-Item -ItemType Directory -Path data\photos
+     ```
+
+     It must be outside `public/` — meal photos are private and must never be statically served.
+   - `USDA_FDC_API_KEY` for real nutrition data (without it, nutrition falls back to labeled
+     approximate estimates or "unavailable").
+   - `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` only if running against real Inngest Cloud (the
+     local Inngest dev server works without them).
+   - Optional: `ADMIN_REVIEW_TOKEN` — shared token that enables the `/admin/food-mappings`
+     review UI. Leave unset to keep admin review disabled.
 2. Install dependencies:
 
    ```powershell
