@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { envelope } from "@/lib/api/envelope";
 import { handleApiError } from "@/lib/api/error-handler";
 import { messageFor } from "@/lib/api/messages";
 import { scanRequestSchema } from "@/lib/api/schemas";
 import { uploadRejectionMessage, validateUpload } from "@/lib/services/ingestion/validate-upload";
-import { storePhoto } from "@/lib/services/ingestion/photo-storage";
+import { LocalPhotoStorage } from "@/lib/services/ingestion/local-photo-storage";
 import { inngest } from "@/lib/jobs/client";
 
 const DEV_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -39,10 +38,11 @@ export async function POST(request: NextRequest) {
     const parsed = scanRequestSchema.parse({
       mode: formData.get("mode") ?? undefined,
       linkedMealLogEntryId: formData.get("linkedMealLogEntryId") ?? undefined,
+      description: formData.get("description") ?? undefined,
     });
 
-    const fileName = (photo as File).name ?? "upload";
-    const { url } = await storePhoto(photo, `scans/${randomUUID()}-${fileName}`);
+    // TODO: migrate legacy *PhotoUrl database fields to provider-neutral photo IDs.
+    const photoId = await new LocalPhotoStorage().save(photo);
 
     if (parsed.mode === "after") {
       // Attaching an after-photo to an existing entry — the client follows up with
@@ -55,24 +55,24 @@ export async function POST(request: NextRequest) {
       }
       await prisma.mealLogEntry.update({
         where: { id: parsed.linkedMealLogEntryId },
-        data: { afterPhotoUrl: url },
+        data: { afterPhotoUrl: photoId },
       });
       return NextResponse.json(
-        envelope({ status: "ok", message: "After-photo received.", data: { photoUrl: url } }),
+        envelope({ status: "ok", message: "After-photo received.", data: { photoUrl: photoId } }),
       );
     }
 
     const mealLogEntry = await prisma.mealLogEntry.create({
       data: {
         userId: DEV_USER_ID,
-        beforePhotoUrl: url,
+        beforePhotoUrl: photoId,
         status: "processing",
       },
     });
 
     await inngest.send({
       name: "scan/submitted",
-      data: { mealLogEntryId: mealLogEntry.id, photoUrl: url, userId: DEV_USER_ID },
+      data: { mealLogEntryId: mealLogEntry.id, photoUrl: photoId, userId: DEV_USER_ID, description: parsed.description },
     });
 
     // Latency from request-received to job-dispatched, tracked toward the SC-001 p95 target (constitution IV).

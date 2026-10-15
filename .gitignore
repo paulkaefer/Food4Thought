@@ -17,3 +17,7 @@ Thumbs.db
 .vercel
 next-env.d.ts
 prisma/dev.db
+tsconfig.tsbuildinfo
+
+# Private, locally stored meal photos
+data/

@@ -14,6 +14,6 @@ export function generateFunEstimate(seedText: string): FunEstimate {
   return {
     label: "just for fun",
     calories,
-    note: `${note} ${calories} calories. 😄 (Not real nutrition data — just for fun!)`,
+    note: `${note} ${calories} Calories. 😄 (Not real nutrition data — just for fun!)`,
   };
 }

@@ -1,12 +1,15 @@
 <!--
 Sync Impact Report
-Version change: [unset/template] → 1.0.0 (initial ratification)
-Modified principles: N/A (template placeholders → concrete principles)
+Version change: 1.0.0 → 1.1.0 (fork amendment)
+Modified principles: none (I–IV preserved verbatim)
 Added principles:
   - I. Code Quality
   - II. Testing Standards (NON-NEGOTIABLE)
   - III. User Experience Consistency
   - IV. Performance Requirements
+  - V. Design Evolution
+  - VI. AI and Nutritional Data Integrity
+  - VII. Architectural Evolution and Provenance
 Added sections:
   - Domain-Specific Quality Gates (photo quality, non-food detection, confidence reporting)
   - Development Workflow
@@ -14,7 +17,7 @@ Removed sections: none (5th generic principle slot dropped per requested 4-princ
 Templates checked: plan-template.md, spec-template.md, tasks-template.md, checklist-template.md
   (no repo-local copies found under .specify/templates in this workspace; command/skill layer
   resolves templates dynamically, no manual edits required)
-Follow-up TODOs: none
+Follow-up TODOs: review original spec FR-026 fallback behavior under new nutrition-data rule
 -->
 
 # Food4Thought Constitution
@@ -71,6 +74,31 @@ request expected to exceed 2 seconds, so the UI never appears frozen. Rationale:
 users abandon slow uploads, and unbounded processing time on unvalidated
 images is both a performance and availability risk.
 
+### V. Design Evolution
+The original application's purpose, visual language, and user journey MUST be treated as the
+foundation for further development, not as frozen constraints. Changes MAY introduce new
+interactions, layouts, and workflows when real capabilities justify them. Material UX changes
+MUST explain how they advance the original product intent and MUST retain clear continuity
+for existing users.
+
+### VI. AI and Nutritional Data Integrity
+AI MAY interpret images, identify candidate foods, suggest food matches, and estimate portions,
+but MUST NOT invent nutrient reference values or present AI-generated values as authoritative.
+Nutrient reference values MUST come from a traceable nutrition data source such as USDA FoodData
+Central, a verifiable manufacturer label, or published restaurant information. Portion-based
+calculations MUST be performed deterministically in application code. Unavailable or unreliable
+nutrition data MUST be marked unavailable, not silently replaced with invented numbers.
+Uncertain identification, hidden ingredients, and approximate portions MUST be disclosed and
+correctable by the user. Visual inference MUST NOT be represented as an allergen safety guarantee.
+
+### VII. Architectural Evolution and Provenance
+Existing provider interfaces and separation of concerns MUST be retained unless a documented
+decision establishes a better alternative. New integrations MUST be independently testable,
+with deterministic fixtures retained for automated tests. Significant architectural changes
+MUST include an ADR or equivalent recorded rationale. The fork MUST preserve attribution
+to the original Food4Thought project and distinguish original decisions from fork-specific
+extensions.
+
 ## Domain-Specific Quality Gates
 <!-- Photo/food-recognition specific constraints that apply across all principles -->
 
@@ -91,7 +119,8 @@ images is both a performance and availability risk.
 Pull requests MUST link the tests covering new/changed behavior and MUST
 confirm which edge cases (per Testing Standards) were validated. Code review
 MUST verify compliance with Code Quality, Testing Standards, UX Consistency,
-and Performance Requirements before approval. Performance-sensitive changes
+Performance Requirements, Design Evolution, AI and Nutritional Data Integrity,
+and Architectural Evolution and Provenance before approval. Performance-sensitive changes
 (image processing, inference calls) MUST include before/after timing data in
 the PR description.
 
@@ -104,4 +133,6 @@ All PRs and reviews MUST verify compliance with this constitution; any
 deviation MUST be explicitly justified in the PR description. Complexity that
 is not directly justified by these principles MUST be simplified or removed.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-16 | **Last Amended**: 2026-09-16
+**Version**: 1.1.0 | **Ratified**: 2026-09-16 | **Last Amended**: 2026-10-08
+
+**Fork lineage:** Original constitution ratified by the Food4Thought project; principles I–IV retained. Principles V–VII added for the scottzastrow fork. This amendment does not claim approval by the upstream maintainer.

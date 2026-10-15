@@ -3,11 +3,14 @@ import { z } from "zod";
 export const scanRequestSchema = z.object({
   mode: z.enum(["before", "after", "single"]).default("single"),
   linkedMealLogEntryId: z.string().uuid().optional(),
+  description: z.string().trim().max(500).optional(),
 });
 
 export const confirmFoodItemSchema = z.object({
   confirmedName: z.string().min(1, "confirmedName is required"),
   resolveConflicts: z.array(z.string().uuid()).default([]),
+  // Optional user-chosen USDA record, validated server-side against the item's stored candidates.
+  usdaFdcId: z.number().int().positive().optional(),
 });
 
 export const manualConsumptionSchema = z.object({

@@ -8,7 +8,7 @@ export const STATUS_MESSAGES: Record<MealLogStatus, string> = {
   rejected_non_food: "That doesn't look like food to us — but we still had fun looking!",
   rejected_low_quality: "This photo is a little camera-shy 🙈 — could you retake it somewhere brighter or steadier?",
   rejected_invalid_file: "We couldn't open that file — please upload a clear JPEG, PNG, or WebP photo.",
-  empty_plate: "Looks like a squeaky-clean plate — 0 calories, nice work!",
+  empty_plate: "Looks like a squeaky-clean plate — 0 Calories, nice work!",
 };
 
 export function messageFor(status: MealLogStatus): string {

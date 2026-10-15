@@ -1,5 +1,5 @@
 export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
-export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15MB
+export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024; // 2MB after browser optimization
 
 export type UploadValidationResult =
   | { ok: true }
@@ -29,7 +29,7 @@ export function uploadRejectionMessage(reason: Exclude<UploadValidationResult, {
     case "unsupported_type":
       return "That file type isn't something we can peek inside — please upload a JPEG, PNG, or WebP photo.";
     case "too_large":
-      return "That photo is a bit too chunky for us to digest — try a file under 15MB.";
+      return "That photo is a bit too chunky for us to digest — try a processed photo under 2MB.";
     case "empty_or_corrupted":
       return "We couldn't open that file — it looks empty or corrupted. Please try uploading it again.";
   }

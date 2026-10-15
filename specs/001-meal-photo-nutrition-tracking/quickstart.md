@@ -2,16 +2,19 @@
 
 ## Prerequisites
 
-- Next.js app running locally (`vercel dev` or `next dev`) with PostgreSQL (Vercel Postgres/Neon or local) and Vercel Blob (or local emulator) available.
+- Next.js app running locally (`npm run dev`) with a PostgreSQL database (local or hosted) and
+  local photo storage configured (`PHOTO_STORAGE_DIR`, e.g. `./data/photos`; created automatically
+  on first upload, must stay outside `public/`). See [docs/LOCAL_SETUP.md](../../../docs/LOCAL_SETUP.md)
+  for the full walkthrough.
 - Inngest dev server running locally for background job execution (`npx inngest-cli dev`).
 - Test fixture photos available (see `contracts/api.md` "Contract test fixtures required" list): clear single-food, clear multi-item plate, non-food, blurry, empty-plate, ambiguous-portion (2+ angles of same portion), hidden-ingredient dish, visually-similar-food pair, invalid file type, corrupted image, oversized file, packaged barcode food, restaurant item.
-- A test user profile with at least one dietary restriction set (e.g., `gluten_free`) and one without any restrictions set.
+- The seeded demo user profile (`npm run db:seed`), with at least one dietary restriction set (e.g., `gluten_free`) for the conflict scenarios, plus a run without any restrictions set.
 
 ## Setup
 
 ```powershell
 # From repo root
-npm install; npx prisma migrate dev; npm run dev
+npm install --legacy-peer-deps; npx prisma migrate deploy; npm run db:seed; npm run dev
 # In a second terminal, run the Inngest dev server
 npx inngest-cli dev
 ```

@@ -5,8 +5,8 @@ export default function ProfilePage() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Dietary restrictions</h1>
       <p className="text-sm opacity-70">
-        Set the restrictions you'd like us to check every scan against. Leaving this empty is totally fine —
-        we'll still always label common allergens and pork on every result.
+        Set the restrictions you&apos;d like us to check every scan against. Leaving this empty is totally fine —
+        we&apos;ll still always label common allergens and pork on every result.
       </p>
       <RestrictionList />
     </div>

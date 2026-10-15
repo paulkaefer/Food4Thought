@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ConsumptionControls } from "@/components/meal/consumption-controls";
 import { ScanResultCard } from "@/components/meal/scan-result-card";
 import { messageFor } from "@/lib/api/messages";
+import { storedUsdaCandidates } from "@/lib/services/nutrition/meal-candidates";
 
 export default async function MealDetailPage({ params }: { params: { id: string } }) {
   const mealLogEntry = await prisma.mealLogEntry.findUnique({
@@ -10,14 +11,17 @@ export default async function MealDetailPage({ params }: { params: { id: string 
   });
 
   if (!mealLogEntry) {
-    return <p>We couldn't find that meal.</p>;
+    return <p>We couldn&apos;t find that meal.</p>;
   }
 
   return (
     <div className="space-y-6">
       <ScanResultCard
         result={{ status: mealLogEntry.status, message: messageFor(mealLogEntry.status), isFunEstimate: mealLogEntry.isFunEstimate }}
-        foodItems={mealLogEntry.foodItems}
+        foodItems={mealLogEntry.foodItems.map((item) => ({
+          ...item,
+          usdaCandidates: storedUsdaCandidates(item.usdaCandidates),
+        }))}
       />
       <ConsumptionControls mealLogEntryId={mealLogEntry.id} />
     </div>
